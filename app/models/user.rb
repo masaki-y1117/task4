@@ -5,24 +5,27 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable
          
 	has_many :books
-	has_many :relationships, foreign_key: 'follower_id'
-	has_many :followings, through: :relationships, source: :following
-	has_many :reverse_of_relationships, class_name: 'Relationship', foreign_key: 'following_id'
-	has_many :followers, through: :reverse_of_relationships, source: :follower
+	has_many :relationships
+	has_many :follower, class_name: "Relationship", foreign_key: "follower_id", dependent: :destroy
+	has_many :followed, class_name: 'Relationship', foreign_key: 'followed_id', dependent: :destroy
+	has_many :following_user, through: :follower, source: :followed
+	has_many :follower_user, through: :followed, source: :follower
 	
+  attachment :profile_image, destroy: false
+  
   def follow(user_id)
     follower.create(followed_id: user_id)
   end
   
+  # ユーザーのフォローを外す
   def unfollow(user_id)
     follower.find_by(followed_id: user_id).destroy
   end
   
-  def followings?(user)
-    followings_user.include?(user)
-    
-    
-  attachment :profile_image, destroy: false
+  # フォロー確認をおこなう
+  def following?(user)
+    following_user.include?(user)
+  end
 
   validates :name, length: {maximum: 20, minimum: 2}, uniqueness: true
   validates :introduction, length: {maximum: 50}
